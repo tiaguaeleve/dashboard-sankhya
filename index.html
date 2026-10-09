@@ -4,116 +4,232 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Gerencial - Universidade Sankhya</title>
+    <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for rendering graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for processing Excel files directly in the browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- FontAwesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 24px; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-        .whatsapp-btn { background-color: #25D366; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 6px; }
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .whatsapp-btn { background-color: #25D366; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: background-color 0.2s; }
         .whatsapp-btn:hover { background-color: #1ebe5d; }
+        .progress-bar-bg { background-color: #e2e8f0; border-radius: 9999px; height: 8px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 9999px; transition: width 0.5s ease-out; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8 text-slate-800">
+
     <div class="max-w-7xl mx-auto">
-        
-        <header class="mb-8 border-b pb-4 flex justify-between items-center">
+        <!-- Header -->
+        <header class="mb-8 border-b border-slate-200 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">Painel Gerencial de Acompanhamento</h1>
-                <p class="text-gray-500 mt-1">Universidade Sankhya - Fase de Implantação</p>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Painel Gerencial de Acompanhamento</h1>
+                <p class="text-slate-500 mt-1 font-medium">Universidade Sankhya - Inteligência de Implantação</p>
             </div>
-            <div class="bg-blue-600 text-white p-3 rounded-lg shadow">
-                <i class="fas fa-university text-2xl"></i>
+            <div class="bg-white p-2 rounded-xl shadow-sm flex items-center justify-center border border-slate-100" style="height: 60px; min-width: 150px;">
+                <!-- Substituído o ícone Sankhya Edu pela Logo da É Leve via URL -->
+                <img src="https://aguaeleve.com.br/images/logo-eleve-barra-home.png" alt="É Leve Água Mineral Natural" class="h-full object-contain">
             </div>
         </header>
         
         <!-- Upload Section -->
-        <div class="card mb-8 border-l-4 border-blue-500">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-file-import mr-2"></i>1. Importar Dados (Excel ou CSV)</h2>
-            <p class="text-sm text-gray-500 mb-4">Selecione a folha de cálculo com os dados dos alunos para gerar o painel automaticamente.</p>
-            <input type="file" id="fileUpload" accept=".xlsx, .xls, .csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+        <div class="card mb-8 border-l-4 border-indigo-500">
+            <h2 class="text-xl font-bold mb-2 text-slate-800"><i class="fas fa-file-import mr-2 text-indigo-500"></i>1. Importar Base de Dados</h2>
+            <p class="text-sm text-slate-500 mb-4">Selecione a planilha extraída do sistema. O painel identificará as colunas automaticamente.</p>
+            
+            <div class="flex items-center justify-center w-full">
+                <label for="fileUpload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-3"></i>
+                        <p class="mb-2 text-sm text-slate-600"><span class="font-semibold">Clique para enviar</span> ou arraste o arquivo (Excel/CSV)</p>
+                    </div>
+                    <input id="fileUpload" type="file" accept=".xlsx, .xls, .csv" class="hidden" />
+                </label>
+            </div>
+            
+            <!-- Error Message Container -->
+            <div id="error-message" class="hidden mt-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="error-text"></span>
+            </div>
         </div>
 
-        <div id="dashboard-content" style="display: none;">
+        <div id="dashboard-content" class="hidden space-y-8 animate-fade-in">
             <!-- KPIs -->
-            <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-chart-line mr-2"></i>2. Visão Geral</h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="card text-center border-b-4 border-blue-500">
-                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Total de Alunos</h3>
-                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-alunos">0</p>
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fas fa-chart-line text-indigo-500"></i>2. Visão Geral do Projeto</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card border-b-4 border-blue-500 flex flex-col justify-center items-center">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl mb-3"><i class="fas fa-users"></i></div>
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider">Total de Alunos</h3>
+                    <p class="text-4xl font-black text-slate-800 mt-1" id="kpi-alunos">0</p>
                 </div>
-                <div class="card text-center border-b-4 border-yellow-500">
-                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Cursos Iniciados</h3>
-                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-iniciados">0</p>
+                <div class="card border-b-4 border-amber-500 flex flex-col justify-center items-center">
+                    <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-xl mb-3"><i class="fas fa-book-open"></i></div>
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider">Cursos Iniciados</h3>
+                    <p class="text-4xl font-black text-slate-800 mt-1" id="kpi-iniciados">0</p>
                 </div>
-                <div class="card text-center border-b-4 border-green-500">
-                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Cursos Concluídos</h3>
-                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-concluidos">0</p>
+                <div class="card border-b-4 border-emerald-500 flex flex-col justify-center items-center">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xl mb-3"><i class="fas fa-graduation-cap"></i></div>
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider">Cursos Concluídos</h3>
+                    <p class="text-4xl font-black text-slate-800 mt-1" id="kpi-concluidos">0</p>
                 </div>
-                <div class="card text-center border-b-4 border-purple-500">
-                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Taxa Média de Conclusão</h3>
-                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-taxa">0%</p>
-                </div>
-            </div>
-
-            <!-- Charts -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="card">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Desempenho por Setor</h3>
-                    <canvas id="chartSetores"></canvas>
-                </div>
-                <div class="card">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Ranking de Alunos (Top 10)</h3>
-                    <canvas id="chartRanking"></canvas>
+                <div class="card border-b-4 border-indigo-500 flex flex-col justify-center items-center">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xl mb-3"><i class="fas fa-percentage"></i></div>
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider">Taxa Média Global</h3>
+                    <p class="text-4xl font-black text-slate-800 mt-1" id="kpi-taxa">0%</p>
                 </div>
             </div>
 
             <!-- Insights / Suggestions -->
-            <div class="card mb-8 bg-blue-50 border border-blue-100">
-                <h2 class="text-xl font-semibold mb-4 text-blue-800"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Sugestões de Melhoria e Ações Recomendadas</h2>
-                <ul id="insights-list" class="space-y-3 text-gray-700"></ul>
+            <div class="card bg-gradient-to-r from-slate-900 to-indigo-900 border-none text-white shadow-xl">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-robot text-amber-400"></i>Análise do Gerente de Projetos</h2>
+                <ul id="insights-list" class="space-y-4 text-slate-200">
+                    <!-- Gerado via JS -->
+                </ul>
             </div>
 
-            <!-- Data Table -->
-            <div class="card mb-8 overflow-x-auto">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-users mr-2"></i>Ações Diretas (WhatsApp)</h2>
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aluno</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Setor</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxa</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Rows via JS -->
-                    </tbody>
-                </table>
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Gráfico de Setores -->
+                <div class="card">
+                    <h3 class="text-lg font-bold text-slate-800 mb-1">Ranking por Setores</h3>
+                    <p class="text-sm text-slate-500 mb-6">Taxa média de conclusão de cursos por departamento</p>
+                    <div class="h-64">
+                        <canvas id="chartSetores"></canvas>
+                    </div>
+                </div>
+                <!-- Gráfico de Alunos -->
+                <div class="card">
+                    <h3 class="text-lg font-bold text-slate-800 mb-1">Top Alunos Engajados</h3>
+                    <p class="text-sm text-slate-500 mb-6">Colaboradores com maior percentual de conclusão</p>
+                    <div class="h-64">
+                        <canvas id="chartAlunos"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Tabela de Setores Críticos -->
+                <div class="card lg:col-span-1 overflow-x-auto">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2"><i class="fas fa-sitemap text-indigo-500"></i>Resumo por Setor</h2>
+                    <table class="min-w-full divide-y divide-slate-200 text-left">
+                        <thead>
+                            <tr>
+                                <th class="pb-3 text-xs font-bold text-slate-500 uppercase">Setor</th>
+                                <th class="pb-3 text-xs font-bold text-slate-500 uppercase">Colab.</th>
+                                <th class="pb-3 text-xs font-bold text-slate-500 uppercase">Taxa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-setores-body" class="divide-y divide-slate-100">
+                            <!-- Rows via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tabela de Ações Diretas (WhatsApp) -->
+                <div class="card lg:col-span-2 overflow-x-auto">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2"><i class="fas fa-users text-indigo-500"></i>Acompanhamento Individual</h2>
+                    <table class="min-w-full divide-y divide-slate-200 text-left">
+                        <thead>
+                            <tr>
+                                <th class="pb-3 text-xs font-bold text-slate-500 uppercase">Aluno</th>
+                                <th class="pb-3 text-xs font-bold text-slate-500 uppercase">Setor (Inferido)</th>
+                                <th class="pb-3 text-xs font-bold text-slate-500 uppercase">Progresso</th>
+                                <th class="pb-3 text-xs font-bold text-slate-500 uppercase text-right">Ação (WhatsApp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-alunos-body" class="divide-y divide-slate-100">
+                            <!-- Rows via JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let chartSetoresInstance = null;
-        let chartRankingInstance = null;
+        let chartAlunosInstance = null;
 
-        document.getElementById('fileUpload').addEventListener('change', function(e) {
+        const fileInput = document.getElementById('fileUpload');
+        const errorContainer = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const dashboard = document.getElementById('dashboard-content');
+
+        function showError(message) {
+            errorText.innerText = message;
+            errorContainer.classList.remove('hidden');
+            dashboard.classList.add('hidden');
+        }
+
+        function hideError() {
+            errorContainer.classList.add('hidden');
+        }
+
+        // Handle File Upload
+        fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
+            
+            hideError();
+            
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function(event) {
                 try {
-                    const data = new Uint8Array(e.target.result);
+                    const data = new Uint8Array(event.target.result);
                     const workbook = XLSX.read(data, {type: 'array'});
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                    processData(jsonData);
+                    
+                    // LER DADOS BRUTOS (Matriz) para encontrar a linha de cabeçalho real
+                    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if(rawData.length === 0) {
+                        throw new Error("A planilha parece estar vazia.");
+                    }
+
+                    // Procurar a linha que contém os cabeçalhos reais (ex: "Aluno", "Email")
+                    let headerRowIndex = -1;
+                    for (let i = 0; i < Math.min(20, rawData.length); i++) {
+                        const rowStr = (rawData[i] || []).join('').toLowerCase();
+                        if (rowStr.includes('aluno') && rowStr.includes('curso')) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (headerRowIndex === -1) {
+                        throw new Error("Não foi possível encontrar as colunas 'Aluno' e 'Cursos'. Verifique o formato da planilha.");
+                    }
+
+                    // Extrair headers e montar o JSON correto
+                    const headers = rawData[headerRowIndex];
+                    const jsonFormatted = [];
+                    
+                    for (let i = headerRowIndex + 1; i < rawData.length; i++) {
+                        const row = rawData[i];
+                        // Ignorar linhas vazias
+                        if (!row || row.length === 0 || !row[0]) continue;
+                        
+                        let obj = {};
+                        headers.forEach((header, index) => {
+                            if (header) {
+                                obj[header.trim()] = row[index];
+                            }
+                        });
+                        jsonFormatted.push(obj);
+                    }
+
+                    processData(jsonFormatted);
+                    
                 } catch (error) {
-                    alert('Erro ao ler o ficheiro. Certifique-se de que é um Excel ou CSV válido.');
+                    console.error(error);
+                    showError(error.message || 'Erro crítico ao ler o arquivo. Certifique-se de que é a planilha padrão da Sankhya.');
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -121,154 +237,295 @@
 
         function processData(data) {
             if (!data || data.length === 0) {
-                alert('O ficheiro está vazio ou não possui um formato reconhecido.');
+                showError('Nenhum dado válido encontrado após o cabeçalho.');
                 return;
             }
-
-            document.getElementById('dashboard-content').style.display = 'block';
 
             let totalAlunos = data.length;
             let totalIniciados = 0;
             let totalConcluidos = 0;
+            
             let setoresMap = {};
             let alunosData = [];
-            let zeroConclusao = [];
-            let atrasados = [];
+            let alunosCriticos = [];
 
             data.forEach(row => {
-                const nome = row['Aluno'] || row['Nome'] || 'Desconhecido';
+                const nome = row['Aluno'] || row['Nome'];
+                if (!nome) return; // Segurança contra linhas residuais
+
+                // Lógica de Dedução de Setor
+                let email = (row['Email'] || '').toString().toLowerCase().trim();
+                let setor = row['Setor'] || row['Departamento'];
+                
+                if (!setor) {
+                    if (email && email.includes('@')) {
+                        // Extrai parte antes do @ e substitui pontos por espaço
+                        let prefix = email.split('@')[0].replace(/\./g, ' ');
+                        // Formata a primeira letra de cada palavra (Title Case)
+                        setor = prefix.replace(/\b\w/g, l => l.toUpperCase());
+                    } else {
+                        setor = 'Operacional / Geral';
+                    }
+                }
+
+                // Parse dos números com segurança
                 const iniciados = parseInt(row['Cursos Iniciados']) || 0;
                 const concluidos = parseInt(row['Cursos Concluídos']) || 0;
                 
-                let taxa = row['Taxa de Conclusão'] || row['Taxa de Conclusão (%)'] || row['Taxa'] || 0;
-                if (typeof taxa === 'string') taxa = parseFloat(taxa.replace('%', '').replace(',', '.'));
-                else if (taxa <= 1 && taxa > 0) taxa = taxa * 100; // converter 0.5 para 50%
-                
-                const setor = row['Setor'] || row['Departamento'] || 'Não Informado';
-                const telefone = row['Telefone'] || row['WhatsApp'] || '';
+                // Recalculando a taxa de forma infalível baseado nos concluídos/iniciados reais
+                let taxa = 0;
+                if (iniciados > 0) {
+                    taxa = Math.round((concluidos / iniciados) * 100);
+                }
 
                 totalIniciados += iniciados;
                 totalConcluidos += concluidos;
 
-                if (!setoresMap[setor]) setoresMap[setor] = 0;
-                setoresMap[setor] += concluidos;
+                const telefone = row['Telefone'] || row['WhatsApp'] || '';
 
-                alunosData.push({ nome, taxa, concluidos, setor, telefone });
+                alunosData.push({ nome, setor, iniciados, concluidos, taxa, telefone, ultimoAcesso: row['Último Acesso'] || 'N/A' });
 
+                // Agrupando por Setor
+                if (!setoresMap[setor]) {
+                    setoresMap[setor] = { nome: setor, totalColaboradores: 0, iniciados: 0, concluidos: 0 };
+                }
+                setoresMap[setor].totalColaboradores += 1;
+                setoresMap[setor].iniciados += iniciados;
+                setoresMap[setor].concluidos += concluidos;
+
+                // Identificando alunos críticos (Iniciaram, mas 0% concluído)
                 if (iniciados > 0 && concluidos === 0) {
-                    zeroConclusao.push(nome);
+                    alunosCriticos.push(nome);
                 }
             });
 
-            const taxaMedia = totalIniciados > 0 ? ((totalConcluidos / totalIniciados) * 100).toFixed(1) : 0;
+            // Processar métricas dos setores
+            let setoresArray = Object.values(setoresMap).map(s => {
+                s.taxaMedia = s.iniciados > 0 ? Math.round((s.concluidos / s.iniciados) * 100) : 0;
+                return s;
+            });
 
+            // Ordenar Setores por Taxa (Maior para Menor)
+            setoresArray.sort((a, b) => b.taxaMedia - a.taxaMedia);
+
+            // Ordenar Alunos por Taxa
+            const alunosRanking = [...alunosData].sort((a, b) => b.taxa - a.taxa);
+            const topAlunos = alunosRanking.slice(0, 10);
+
+            const taxaMediaGlobal = totalIniciados > 0 ? Math.round((totalConcluidos / totalIniciados) * 100) : 0;
+
+            // Atualizar UI
             document.getElementById('kpi-alunos').innerText = totalAlunos;
             document.getElementById('kpi-iniciados').innerText = totalIniciados;
             document.getElementById('kpi-concluidos').innerText = totalConcluidos;
-            document.getElementById('kpi-taxa').innerText = taxaMedia + '%';
+            document.getElementById('kpi-taxa').innerText = taxaMediaGlobal + '%';
 
-            // Ordenar para o ranking
-            const alunosRanking = [...alunosData].sort((a, b) => b.taxa - a.taxa).slice(0, 10);
-            renderCharts(setoresMap, alunosRanking);
-            generateInsights(zeroConclusao, taxaMedia, alunosRanking[0]);
-            populateTable(alunosData);
+            renderCharts(setoresArray, topAlunos);
+            generateInsights(alunosCriticos, taxaMediaGlobal, alunosRanking[0], setoresArray);
+            populateSectorsTable(setoresArray);
+            populateUsersTable(alunosData);
+            
+            // Mostrar Painel
+            dashboard.classList.remove('hidden');
+            // Scroll suave para o painel
+            dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        function renderCharts(setoresMap, topAlunos) {
+        function renderCharts(setoresArray, topAlunos) {
+            // Setup Cores Dinâmicas
+            const colors = {
+                indigo: '#6366f1',
+                emerald: '#10b981',
+                amber: '#f59e0b',
+                red: '#ef4444'
+            };
+
             const ctxSetores = document.getElementById('chartSetores').getContext('2d');
-            const ctxRanking = document.getElementById('chartRanking').getContext('2d');
+            const ctxAlunos = document.getElementById('chartAlunos').getContext('2d');
 
             if (chartSetoresInstance) chartSetoresInstance.destroy();
-            if (chartRankingInstance) chartRankingInstance.destroy();
+            if (chartAlunosInstance) chartAlunosInstance.destroy();
 
+            // Gráfico de Setores (Barras Horizontais para facilitar leitura de nomes longos)
             chartSetoresInstance = new Chart(ctxSetores, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(setoresMap),
-                    datasets: [{
-                        label: 'Cursos Concluídos',
-                        data: Object.values(setoresMap),
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 4
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
-
-            chartRankingInstance = new Chart(ctxRanking, {
-                type: 'bar',
-                data: {
-                    labels: topAlunos.map(a => a.nome.split(' ')[0]), // Primeiro nome para caber melhor
+                    labels: setoresArray.map(s => s.nome),
                     datasets: [{
                         label: 'Taxa de Conclusão (%)',
-                        data: topAlunos.map(a => a.taxa),
-                        backgroundColor: '#10b981',
-                        borderRadius: 4
+                        data: setoresArray.map(s => s.taxaMedia),
+                        backgroundColor: setoresArray.map(s => s.taxaMedia < 50 ? colors.amber : colors.indigo),
+                        borderRadius: 6,
+                        barThickness: 'flex',
+                        maxBarThickness: 40
                     }]
                 },
                 options: { 
                     responsive: true, 
-                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Barras horizontais
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return context.parsed.x + '% concluído'; }
+                            }
+                        }
+                    },
+                    scales: { x: { max: 100, grid: { display: false } }, y: { grid: { display: false } } }
+                }
+            });
+
+            // Gráfico de Alunos
+            chartAlunosInstance = new Chart(ctxAlunos, {
+                type: 'bar',
+                data: {
+                    labels: topAlunos.map(a => a.nome.split(' ')[0] + ' ' + (a.nome.split(' ')[1] || '')), // Nome e Sobrenome
+                    datasets: [{
+                        label: 'Taxa (%)',
+                        data: topAlunos.map(a => a.taxa),
+                        backgroundColor: colors.emerald,
+                        borderRadius: 6,
+                        maxBarThickness: 40
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { x: { max: 100 } }
+                    scales: { y: { max: 100, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } }
                 }
             });
         }
 
-        function generateInsights(zeroConclusao, taxaMedia, topAluno) {
+        function generateInsights(alunosCriticos, taxaMedia, topAluno, setoresArray) {
             const list = document.getElementById('insights-list');
             list.innerHTML = '';
             
-            const liClass = "flex items-start bg-white p-3 rounded shadow-sm border-l-4 border-blue-400";
+            const liClass = "flex items-start bg-white/10 p-4 rounded-xl border border-white/20 backdrop-blur-sm";
 
-            // Insight 1: Média Global
-            let mediaText = taxaMedia < 50 
-                ? `A taxa média de conclusão está em <strong>${taxaMedia}%</strong>. É recomendado reforçar a comunicação sobre a importância da universidade corporativa para melhorar a adesão.`
-                : `A equipa apresenta uma boa média de <strong>${taxaMedia}%</strong>. O ritmo de implantação está no caminho certo!`;
-            list.innerHTML += `<li class="${liClass}"><i class="fas fa-chart-pie mt-1 text-blue-500 mr-3"></i> <div>${mediaText}</div></li>`;
+            // Insight 1: Saúde Global do Projeto
+            let statusGlobal = taxaMedia >= 60 ? "Saudável" : (taxaMedia >= 30 ? "Em Alerta" : "Crítico");
+            let iconGlobal = taxaMedia >= 60 ? "fa-check-circle text-emerald-400" : "fa-exclamation-circle text-amber-400";
+            
+            list.innerHTML += `
+                <li class="${liClass}">
+                    <i class="fas ${iconGlobal} mt-1 mr-3 text-xl"></i> 
+                    <div>
+                        <strong class="block text-white">Status da Implantação: ${statusGlobal} (${taxaMedia}%)</strong>
+                        <span class="text-slate-300 text-sm">O ritmo atual reflete a taxa de adesão global. Mantenha rotinas semanais de acompanhamento para engajar os colaboradores.</span>
+                    </div>
+                </li>`;
 
-            // Insight 2: Reconhecimento
-            if (topAluno) {
-                list.innerHTML += `<li class="${liClass} border-green-400"><i class="fas fa-trophy mt-1 text-green-500 mr-3"></i> <div><strong>Reconhecimento:</strong> O(a) colaborador(a) <strong>${topAluno.nome}</strong> está a liderar com uma taxa de ${topAluno.taxa}%. Sugere-se um elogio público para incentivar os demais.</div></li>`;
+            // Insight 2: Destaques
+            if (topAluno && setoresArray.length > 0) {
+                const topSetor = setoresArray[0];
+                list.innerHTML += `
+                <li class="${liClass}">
+                    <i class="fas fa-trophy text-amber-400 mt-1 mr-3 text-xl"></i> 
+                    <div>
+                        <strong class="block text-white">Destaques Positivos</strong>
+                        <span class="text-slate-300 text-sm">O setor de <strong>${topSetor.nome}</strong> lidera as métricas (${topSetor.taxaMedia}%). O aluno com melhor progresso é <strong>${topAluno.nome}</strong>. Sugestão: Use-os como embaixadores do conhecimento.</span>
+                    </div>
+                </li>`;
             }
 
-            // Insight 3: Risco de Abandono (0%)
-            if (zeroConclusao.length > 0) {
-                const limit = 3;
-                const nomes = zeroConclusao.slice(0, limit).join(', ') + (zeroConclusao.length > limit ? ` e mais ${zeroConclusao.length - limit}` : '');
-                list.innerHTML += `<li class="${liClass} border-red-400"><i class="fas fa-exclamation-triangle mt-1 text-red-500 mr-3"></i> <div><strong>Atenção Necessária:</strong> ${zeroConclusao.length} colaborador(es) (ex: ${nomes}) iniciaram cursos mas não concluíram nenhum (0%). <strong>Ação:</strong> Utilize os botões de WhatsApp abaixo para os contactar e oferecer ajuda.</div></li>`;
-            } else {
-                list.innerHTML += `<li class="${liClass} border-green-400"><i class="fas fa-check-circle mt-1 text-green-500 mr-3"></i> <div>Todos os colaboradores que iniciaram cursos apresentam progresso ativo.</div></li>`;
+            // Insight 3: Setores e Alunos Críticos (Ação do Gestor)
+            const setorCritico = setoresArray.length > 1 ? setoresArray[setoresArray.length - 1] : null;
+            
+            let acaoCriticaHtml = '';
+            if (setorCritico && setorCritico.taxaMedia < 40) {
+                acaoCriticaHtml += `<div class="mb-2"><strong class="text-red-300">Setor Crítico:</strong> O departamento de <strong>${setorCritico.nome}</strong> possui a menor taxa (${setorCritico.taxaMedia}%). <em>Ação sugerida: Alinhar com a liderança desta área reserva de tempo na agenda para estudo.</em></div>`;
+            }
+
+            if (alunosCriticos.length > 0) {
+                const amostra = alunosCriticos.slice(0, 3).join(', ');
+                const restante = alunosCriticos.length > 3 ? ` e mais ${alunosCriticos.length - 3}` : '';
+                acaoCriticaHtml += `<div><strong class="text-red-300">Risco de Abandono:</strong> ${alunosCriticos.length} aluno(s) (${amostra}${restante}) têm 0% de conclusão. <em>Ação: Utilize os botões do WhatsApp abaixo para enviar cobranças ativas.</em></div>`;
+            }
+
+            if(acaoCriticaHtml !== '') {
+                list.innerHTML += `
+                <li class="${liClass} border-red-500/30 bg-red-900/20">
+                    <i class="fas fa-bullseye text-red-400 mt-1 mr-3 text-xl"></i> 
+                    <div class="text-sm text-slate-300">
+                        ${acaoCriticaHtml}
+                    </div>
+                </li>`;
             }
         }
 
-        function populateTable(alunosData) {
-            const tbody = document.getElementById('table-body');
+        function populateSectorsTable(setoresArray) {
+            const tbody = document.getElementById('table-setores-body');
+            tbody.innerHTML = '';
+
+            setoresArray.forEach(setor => {
+                let badgeClass = 'bg-emerald-100 text-emerald-700';
+                if(setor.taxaMedia < 30) badgeClass = 'bg-red-100 text-red-700';
+                else if (setor.taxaMedia < 60) badgeClass = 'bg-amber-100 text-amber-700';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-3 px-2 whitespace-nowrap font-medium text-slate-800">${setor.nome}</td>
+                    <td class="py-3 px-2 text-slate-500 text-center">${setor.totalColaboradores}</td>
+                    <td class="py-3 px-2 text-right">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${badgeClass}">
+                            ${setor.taxaMedia}%
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateUsersTable(alunosData) {
+            const tbody = document.getElementById('table-alunos-body');
             tbody.innerHTML = '';
 
             alunosData.forEach(aluno => {
                 const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
                 
-                // Definir cor da taxa
-                let taxaColor = 'text-green-600';
-                if (aluno.taxa === 0) taxaColor = 'text-red-600';
-                else if (aluno.taxa < 50) taxaColor = 'text-yellow-600';
+                // Barra de progresso visual
+                let pColor = 'bg-emerald-500';
+                if (aluno.taxa === 0) pColor = 'bg-red-500';
+                else if (aluno.taxa < 50) pColor = 'bg-amber-500';
 
-                // Mensagem customizada para WhatsApp
-                let msg = aluno.taxa === 0 
-                    ? `Olá ${aluno.nome.split(' ')[0]}, notámos que ainda não concluiu os cursos iniciados na Universidade Sankhya. Precisa de alguma ajuda?`
-                    : `Olá ${aluno.nome.split(' ')[0]}, vimos que a sua taxa de conclusão está em ${aluno.taxa}%. Continue assim!`;
+                const pBar = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold w-9">${aluno.taxa}%</span>
+                        <div class="progress-bar-bg flex-1 w-24">
+                            <div class="progress-bar-fill ${pColor}" style="width: ${aluno.taxa}%"></div>
+                        </div>
+                    </div>
+                `;
+
+                // Inteligência da mensagem WhatsApp baseada no status
+                let msg = '';
+                if (aluno.taxa === 0) {
+                    msg = `Olá ${aluno.nome.split(' ')[0]}, verifiquei no sistema da Universidade Sankhya que você iniciou seus cursos mas ainda está com 0% de conclusão. Como posso te ajudar a destravar isso?`;
+                } else if (aluno.taxa < 100) {
+                    msg = `Olá ${aluno.nome.split(' ')[0]}, acompanhando a implantação da Sankhya, vi que você já está com ${aluno.taxa}% de conclusão nos cursos! Falta pouco, vamos focar em finalizar esta semana?`;
+                } else {
+                    msg = `Parabéns ${aluno.nome.split(' ')[0]}! Vi que você alcançou 100% de conclusão na Universidade Sankhya. Excelente engajamento!`;
+                }
                 
                 let phone = aluno.telefone ? aluno.telefone.toString().replace(/\D/g, '') : '';
-                let linkWA = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                let linkWA = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                
+                // Formatação do último acesso
+                let ultimoAcessoStr = aluno.ultimoAcesso !== 'N/A' ? `<span class="block text-xs text-slate-400 mt-1">Acesso: ${aluno.ultimoAcesso}</span>` : '';
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${aluno.nome}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${aluno.setor}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold ${taxaColor}">${aluno.taxa}%</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <a href="${linkWA}" target="_blank" class="whatsapp-btn">
-                            <i class="fab fa-whatsapp text-lg"></i> Enviar Mensagem
+                    <td class="py-4 pr-3 whitespace-nowrap">
+                        <div class="font-bold text-slate-800">${aluno.nome}</div>
+                        ${ultimoAcessoStr}
+                    </td>
+                    <td class="py-4 px-3 whitespace-nowrap text-sm text-slate-500">${aluno.setor}</td>
+                    <td class="py-4 px-3 whitespace-nowrap">${pBar}</td>
+                    <td class="py-4 pl-3 text-right whitespace-nowrap">
+                        <a href="${linkWA}" target="_blank" class="whatsapp-btn shadow-sm">
+                            <i class="fab fa-whatsapp text-lg"></i> Cobrar
                         </a>
                     </td>
                 `;
