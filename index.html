@@ -60,6 +60,14 @@
         </div>
 
         <div id="dashboard-content" class="hidden space-y-8 animate-fade-in">
+            
+            <!-- Resumo Gerencial Button -->
+            <div class="flex justify-end mb-4">
+                <button id="btnResumoGeral" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md flex items-center gap-2 transition-colors">
+                    <i class="fab fa-whatsapp text-xl"></i> Enviar Resumo Gerencial
+                </button>
+            </div>
+
             <!-- KPIs -->
             <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fas fa-chart-line text-indigo-500"></i>2. Visão Geral do Projeto</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -155,6 +163,7 @@
     <script>
         let chartSetoresInstance = null;
         let chartAlunosInstance = null;
+        let globalDataForSummary = {}; // To store data for the general WhatsApp summary
 
         const fileInput = document.getElementById('fileUpload');
         const errorContainer = document.getElementById('error-message');
@@ -197,7 +206,7 @@
                     let headerRowIndex = -1;
                     for (let i = 0; i < Math.min(20, rawData.length); i++) {
                         const rowStr = (rawData[i] || []).join('').toLowerCase();
-                        if (rowStr.includes('aluno') && rowStr.includes('curso')) {
+                        if (rowStr.includes('aluno') && (rowStr.includes('curso') || rowStr.includes('setor'))) {
                             headerRowIndex = i;
                             break;
                         }
@@ -251,31 +260,38 @@
 
             data.forEach(row => {
                 const nome = row['Aluno'] || row['Nome'];
-                if (!nome) return; // Segurança contra linhas residuais
+                if (!nome) return;
 
-                // Lógica de Dedução de Setor
+                // Lógica de Setor (Prioriza a coluna, se não existir, tenta deduzir)
                 let email = (row['Email'] || '').toString().toLowerCase().trim();
-                let setor = row['Setor'] || row['Departamento'];
+                let setor = row['SETOR'] || row['Setor'] || row['Departamento'];
                 
                 if (!setor) {
                     if (email && email.includes('@')) {
-                        // Extrai parte antes do @ e substitui pontos por espaço
                         let prefix = email.split('@')[0].replace(/\./g, ' ');
-                        // Formata a primeira letra de cada palavra (Title Case)
                         setor = prefix.replace(/\b\w/g, l => l.toUpperCase());
                     } else {
-                        setor = 'Operacional / Geral';
+                        setor = 'Não Informado';
                     }
                 }
+                
+                // Normaliza o nome do setor (maiúsculas para agrupar corretamente)
+                setor = setor.toUpperCase().trim();
 
-                // Parse dos números com segurança
                 const iniciados = parseInt(row['Cursos Iniciados']) || 0;
                 const concluidos = parseInt(row['Cursos Concluídos']) || 0;
                 
-                // Recalculando a taxa de forma infalível baseado nos concluídos/iniciados reais
+                // Pega a taxa da planilha, ou calcula se não vier (tratando o formato '99%' ou '0.99')
+                let taxaStr = row['Taxa de Conclusão'] || row['Taxa'] || '0';
                 let taxa = 0;
-                if (iniciados > 0) {
-                    taxa = Math.round((concluidos / iniciados) * 100);
+                if(typeof taxaStr === 'string' && taxaStr.includes('%')) {
+                     taxa = parseInt(taxaStr.replace('%', ''));
+                } else if (!isNaN(parseFloat(taxaStr))) {
+                    // Trata casos onde o excel manda 0.5 ao inves de 50%
+                    let val = parseFloat(taxaStr);
+                    taxa = val <= 1 && val > 0 ? Math.round(val * 100) : Math.round(val);
+                } else if (iniciados > 0) {
+                     taxa = Math.round((concluidos / iniciados) * 100);
                 }
 
                 totalIniciados += iniciados;
@@ -293,13 +309,13 @@
                 setoresMap[setor].iniciados += iniciados;
                 setoresMap[setor].concluidos += concluidos;
 
-                // Identificando alunos críticos (Iniciaram, mas 0% concluído)
+                // Identificando alunos críticos (Iniciaram, mas 0% concluído ou não acessam há muito tempo)
                 if (iniciados > 0 && concluidos === 0) {
-                    alunosCriticos.push(nome);
+                    alunosCriticos.push({nome: nome, setor: setor});
                 }
             });
 
-            // Processar métricas dos setores
+            // Processar métricas dos setores (Taxa Média)
             let setoresArray = Object.values(setoresMap).map(s => {
                 s.taxaMedia = s.iniciados > 0 ? Math.round((s.concluidos / s.iniciados) * 100) : 0;
                 return s;
@@ -313,6 +329,14 @@
             const topAlunos = alunosRanking.slice(0, 10);
 
             const taxaMediaGlobal = totalIniciados > 0 ? Math.round((totalConcluidos / totalIniciados) * 100) : 0;
+
+            // Save data for the global summary button
+            globalDataForSummary = {
+                taxaGlobal: taxaMediaGlobal,
+                melhorSetor: setoresArray.length > 0 ? setoresArray[0] : null,
+                piorSetor: setoresArray.length > 0 ? setoresArray[setoresArray.length - 1] : null,
+                totalAlunosZero: alunosCriticos.length
+            };
 
             // Atualizar UI
             document.getElementById('kpi-alunos').innerText = totalAlunos;
@@ -346,13 +370,13 @@
             if (chartSetoresInstance) chartSetoresInstance.destroy();
             if (chartAlunosInstance) chartAlunosInstance.destroy();
 
-            // Gráfico de Setores (Barras Horizontais para facilitar leitura de nomes longos)
+            // Gráfico de Setores (% Média)
             chartSetoresInstance = new Chart(ctxSetores, {
                 type: 'bar',
                 data: {
                     labels: setoresArray.map(s => s.nome),
                     datasets: [{
-                        label: 'Taxa de Conclusão (%)',
+                        label: 'Taxa Média do Setor (%)',
                         data: setoresArray.map(s => s.taxaMedia),
                         backgroundColor: setoresArray.map(s => s.taxaMedia < 50 ? colors.amber : colors.indigo),
                         borderRadius: 6,
@@ -376,15 +400,18 @@
                 }
             });
 
-            // Gráfico de Alunos
+            // Gráfico de Alunos (% Engajamento)
             chartAlunosInstance = new Chart(ctxAlunos, {
                 type: 'bar',
                 data: {
-                    labels: topAlunos.map(a => a.nome.split(' ')[0] + ' ' + (a.nome.split(' ')[1] || '')), // Nome e Sobrenome
+                    labels: topAlunos.map(a => {
+                        let partes = a.nome.split(' ');
+                        return partes[0] + ' ' + (partes[1] || ''); // Primeiro e segundo nome
+                    }),
                     datasets: [{
-                        label: 'Taxa (%)',
+                        label: 'Engajamento (%)',
                         data: topAlunos.map(a => a.taxa),
-                        backgroundColor: colors.emerald,
+                        backgroundColor: topAlunos.map(a => a.taxa === 100 ? colors.indigo : colors.emerald),
                         borderRadius: 6,
                         maxBarThickness: 40
                     }]
@@ -435,13 +462,13 @@
             
             let acaoCriticaHtml = '';
             if (setorCritico && setorCritico.taxaMedia < 40) {
-                acaoCriticaHtml += `<div class="mb-2"><strong class="text-red-300">Setor Crítico:</strong> O departamento de <strong>${setorCritico.nome}</strong> possui a menor taxa (${setorCritico.taxaMedia}%). <em>Ação sugerida: Alinhar com a liderança desta área reserva de tempo na agenda para estudo.</em></div>`;
+                acaoCriticaHtml += `<div class="mb-2"><strong class="text-red-300">Ponto Crítico - Setor:</strong> O departamento <strong>${setorCritico.nome}</strong> está com desempenho abaixo da meta (${setorCritico.taxaMedia}%). <em>Necessária intervenção gerencial para liberar tempo de estudo.</em></div>`;
             }
 
             if (alunosCriticos.length > 0) {
-                const amostra = alunosCriticos.slice(0, 3).join(', ');
+                const amostra = alunosCriticos.slice(0, 3).map(a => `${a.nome} (${a.setor})`).join(', ');
                 const restante = alunosCriticos.length > 3 ? ` e mais ${alunosCriticos.length - 3}` : '';
-                acaoCriticaHtml += `<div><strong class="text-red-300">Risco de Abandono:</strong> ${alunosCriticos.length} aluno(s) (${amostra}${restante}) têm 0% de conclusão. <em>Ação: Utilize os botões do WhatsApp abaixo para enviar cobranças ativas.</em></div>`;
+                acaoCriticaHtml += `<div><strong class="text-red-300">Ponto Crítico - Usuários:</strong> ${alunosCriticos.length} aluno(s) (${amostra}${restante}) iniciaram cursos mas não concluíram nenhum. <em>Risco de estagnação do projeto nesses pontos.</em></div>`;
             }
 
             if(acaoCriticaHtml !== '') {
@@ -502,12 +529,14 @@
 
                 // Inteligência da mensagem WhatsApp baseada no status
                 let msg = '';
-                if (aluno.taxa === 0) {
-                    msg = `Olá ${aluno.nome.split(' ')[0]}, verifiquei no sistema da Universidade Sankhya que você iniciou seus cursos mas ainda está com 0% de conclusão. Como posso te ajudar a destravar isso?`;
+                if (aluno.taxa === 0 && aluno.iniciados > 0) {
+                    msg = `Olá ${aluno.nome.split(' ')[0]}, vi no Painel Gerencial que você iniciou ${aluno.iniciados} cursos na Universidade Sankhya, mas ainda não concluiu. Existe algum bloqueio? Precisa de ajuda com o sistema?`;
+                } else if (aluno.taxa === 0 && aluno.iniciados === 0) {
+                     msg = `Olá ${aluno.nome.split(' ')[0]}, notei que você ainda não iniciou seus estudos na Universidade Sankhya. É muito importante para o setor de ${aluno.setor}. Vamos começar essa semana?`;
                 } else if (aluno.taxa < 100) {
-                    msg = `Olá ${aluno.nome.split(' ')[0]}, acompanhando a implantação da Sankhya, vi que você já está com ${aluno.taxa}% de conclusão nos cursos! Falta pouco, vamos focar em finalizar esta semana?`;
+                    msg = `Olá ${aluno.nome.split(' ')[0]}, parabéns pelo avanço! Você já concluiu ${aluno.concluidos} de ${aluno.iniciados} cursos (${aluno.taxa}%). Falta pouco para batermos a meta do setor de ${aluno.setor}!`;
                 } else {
-                    msg = `Parabéns ${aluno.nome.split(' ')[0]}! Vi que você alcançou 100% de conclusão na Universidade Sankhya. Excelente engajamento!`;
+                    msg = `Excelente trabalho, ${aluno.nome.split(' ')[0]}! Você atingiu 100% de conclusão. Isso eleva muito a média do setor de ${aluno.setor}. Obrigado pelo engajamento!`;
                 }
                 
                 let phone = aluno.telefone ? aluno.telefone.toString().replace(/\D/g, '') : '';
@@ -532,6 +561,31 @@
                 tbody.appendChild(tr);
             });
         }
+
+        // Ação do Botão de Resumo Gerencial
+        document.getElementById('btnResumoGeral').addEventListener('click', () => {
+            if(!globalDataForSummary.melhorSetor) return alert("Por favor, importe os dados primeiro.");
+
+            let dataHoje = new Date().toLocaleDateString('pt-BR');
+            let textoResumo = `*Resumo Gerencial - Universidade Sankhya (${dataHoje})* 📊\n\n`;
+            textoResumo += `*Média Global de Conclusão:* ${globalDataForSummary.taxaGlobal}%\n\n`;
+            
+            textoResumo += `🏆 *Destaque (Setor)*: ${globalDataForSummary.melhorSetor.nome} lidera com ${globalDataForSummary.melhorSetor.taxaMedia}% de engajamento.\n`;
+            
+            if(globalDataForSummary.piorSetor && globalDataForSummary.piorSetor.taxaMedia < 50) {
+                 textoResumo += `⚠️ *Ponto de Atenção (Setor)*: O setor ${globalDataForSummary.piorSetor.nome} precisa de apoio, média atual de ${globalDataForSummary.piorSetor.taxaMedia}%.\n`;
+            }
+            
+            if(globalDataForSummary.totalAlunosZero > 0) {
+                textoResumo += `🚨 *Alerta Crítico*: ${globalDataForSummary.totalAlunosZero} colaborador(es) iniciaram treinamentos mas estão com 0% de conclusão. Necessária cobrança direta aos líderes de área.\n`;
+            }
+            
+            textoResumo += `\n_Gerado via Painel de Acompanhamento._`;
+
+            let linkWA = `https://wa.me/?text=${encodeURIComponent(textoResumo)}`;
+            window.open(linkWA, '_blank');
+        });
+
     </script>
 </body>
 </html>
