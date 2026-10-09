@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Gerencial - Universidade Sankhya</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 24px; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .whatsapp-btn { background-color: #25D366; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 6px; }
+        .whatsapp-btn:hover { background-color: #1ebe5d; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        
+        <header class="mb-8 border-b pb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Painel Gerencial de Acompanhamento</h1>
+                <p class="text-gray-500 mt-1">Universidade Sankhya - Fase de Implantação</p>
+            </div>
+            <div class="bg-blue-600 text-white p-3 rounded-lg shadow">
+                <i class="fas fa-university text-2xl"></i>
+            </div>
+        </header>
+        
+        <!-- Upload Section -->
+        <div class="card mb-8 border-l-4 border-blue-500">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-file-import mr-2"></i>1. Importar Dados (Excel ou CSV)</h2>
+            <p class="text-sm text-gray-500 mb-4">Selecione a folha de cálculo com os dados dos alunos para gerar o painel automaticamente.</p>
+            <input type="file" id="fileUpload" accept=".xlsx, .xls, .csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+        </div>
+
+        <div id="dashboard-content" style="display: none;">
+            <!-- KPIs -->
+            <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-chart-line mr-2"></i>2. Visão Geral</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="card text-center border-b-4 border-blue-500">
+                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Total de Alunos</h3>
+                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-alunos">0</p>
+                </div>
+                <div class="card text-center border-b-4 border-yellow-500">
+                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Cursos Iniciados</h3>
+                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-iniciados">0</p>
+                </div>
+                <div class="card text-center border-b-4 border-green-500">
+                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Cursos Concluídos</h3>
+                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-concluidos">0</p>
+                </div>
+                <div class="card text-center border-b-4 border-purple-500">
+                    <h3 class="text-gray-500 text-sm font-semibold uppercase tracking-wider">Taxa Média de Conclusão</h3>
+                    <p class="text-4xl font-bold text-gray-800 mt-2" id="kpi-taxa">0%</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="card">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Desempenho por Setor</h3>
+                    <canvas id="chartSetores"></canvas>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Ranking de Alunos (Top 10)</h3>
+                    <canvas id="chartRanking"></canvas>
+                </div>
+            </div>
+
+            <!-- Insights / Suggestions -->
+            <div class="card mb-8 bg-blue-50 border border-blue-100">
+                <h2 class="text-xl font-semibold mb-4 text-blue-800"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Sugestões de Melhoria e Ações Recomendadas</h2>
+                <ul id="insights-list" class="space-y-3 text-gray-700"></ul>
+            </div>
+
+            <!-- Data Table -->
+            <div class="card mb-8 overflow-x-auto">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-users mr-2"></i>Ações Diretas (WhatsApp)</h2>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aluno</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Setor</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxa</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartSetoresInstance = null;
+        let chartRankingInstance = null;
+
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    processData(jsonData);
+                } catch (error) {
+                    alert('Erro ao ler o ficheiro. Certifique-se de que é um Excel ou CSV válido.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processData(data) {
+            if (!data || data.length === 0) {
+                alert('O ficheiro está vazio ou não possui um formato reconhecido.');
+                return;
+            }
+
+            document.getElementById('dashboard-content').style.display = 'block';
+
+            let totalAlunos = data.length;
+            let totalIniciados = 0;
+            let totalConcluidos = 0;
+            let setoresMap = {};
+            let alunosData = [];
+            let zeroConclusao = [];
+            let atrasados = [];
+
+            data.forEach(row => {
+                const nome = row['Aluno'] || row['Nome'] || 'Desconhecido';
+                const iniciados = parseInt(row['Cursos Iniciados']) || 0;
+                const concluidos = parseInt(row['Cursos Concluídos']) || 0;
+                
+                let taxa = row['Taxa de Conclusão'] || row['Taxa de Conclusão (%)'] || row['Taxa'] || 0;
+                if (typeof taxa === 'string') taxa = parseFloat(taxa.replace('%', '').replace(',', '.'));
+                else if (taxa <= 1 && taxa > 0) taxa = taxa * 100; // converter 0.5 para 50%
+                
+                const setor = row['Setor'] || row['Departamento'] || 'Não Informado';
+                const telefone = row['Telefone'] || row['WhatsApp'] || '';
+
+                totalIniciados += iniciados;
+                totalConcluidos += concluidos;
+
+                if (!setoresMap[setor]) setoresMap[setor] = 0;
+                setoresMap[setor] += concluidos;
+
+                alunosData.push({ nome, taxa, concluidos, setor, telefone });
+
+                if (iniciados > 0 && concluidos === 0) {
+                    zeroConclusao.push(nome);
+                }
+            });
+
+            const taxaMedia = totalIniciados > 0 ? ((totalConcluidos / totalIniciados) * 100).toFixed(1) : 0;
+
+            document.getElementById('kpi-alunos').innerText = totalAlunos;
+            document.getElementById('kpi-iniciados').innerText = totalIniciados;
+            document.getElementById('kpi-concluidos').innerText = totalConcluidos;
+            document.getElementById('kpi-taxa').innerText = taxaMedia + '%';
+
+            // Ordenar para o ranking
+            const alunosRanking = [...alunosData].sort((a, b) => b.taxa - a.taxa).slice(0, 10);
+            renderCharts(setoresMap, alunosRanking);
+            generateInsights(zeroConclusao, taxaMedia, alunosRanking[0]);
+            populateTable(alunosData);
+        }
+
+        function renderCharts(setoresMap, topAlunos) {
+            const ctxSetores = document.getElementById('chartSetores').getContext('2d');
+            const ctxRanking = document.getElementById('chartRanking').getContext('2d');
+
+            if (chartSetoresInstance) chartSetoresInstance.destroy();
+            if (chartRankingInstance) chartRankingInstance.destroy();
+
+            chartSetoresInstance = new Chart(ctxSetores, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(setoresMap),
+                    datasets: [{
+                        label: 'Cursos Concluídos',
+                        data: Object.values(setoresMap),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            chartRankingInstance = new Chart(ctxRanking, {
+                type: 'bar',
+                data: {
+                    labels: topAlunos.map(a => a.nome.split(' ')[0]), // Primeiro nome para caber melhor
+                    datasets: [{
+                        label: 'Taxa de Conclusão (%)',
+                        data: topAlunos.map(a => a.taxa),
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: { x: { max: 100 } }
+                }
+            });
+        }
+
+        function generateInsights(zeroConclusao, taxaMedia, topAluno) {
+            const list = document.getElementById('insights-list');
+            list.innerHTML = '';
+            
+            const liClass = "flex items-start bg-white p-3 rounded shadow-sm border-l-4 border-blue-400";
+
+            // Insight 1: Média Global
+            let mediaText = taxaMedia < 50 
+                ? `A taxa média de conclusão está em <strong>${taxaMedia}%</strong>. É recomendado reforçar a comunicação sobre a importância da universidade corporativa para melhorar a adesão.`
+                : `A equipa apresenta uma boa média de <strong>${taxaMedia}%</strong>. O ritmo de implantação está no caminho certo!`;
+            list.innerHTML += `<li class="${liClass}"><i class="fas fa-chart-pie mt-1 text-blue-500 mr-3"></i> <div>${mediaText}</div></li>`;
+
+            // Insight 2: Reconhecimento
+            if (topAluno) {
+                list.innerHTML += `<li class="${liClass} border-green-400"><i class="fas fa-trophy mt-1 text-green-500 mr-3"></i> <div><strong>Reconhecimento:</strong> O(a) colaborador(a) <strong>${topAluno.nome}</strong> está a liderar com uma taxa de ${topAluno.taxa}%. Sugere-se um elogio público para incentivar os demais.</div></li>`;
+            }
+
+            // Insight 3: Risco de Abandono (0%)
+            if (zeroConclusao.length > 0) {
+                const limit = 3;
+                const nomes = zeroConclusao.slice(0, limit).join(', ') + (zeroConclusao.length > limit ? ` e mais ${zeroConclusao.length - limit}` : '');
+                list.innerHTML += `<li class="${liClass} border-red-400"><i class="fas fa-exclamation-triangle mt-1 text-red-500 mr-3"></i> <div><strong>Atenção Necessária:</strong> ${zeroConclusao.length} colaborador(es) (ex: ${nomes}) iniciaram cursos mas não concluíram nenhum (0%). <strong>Ação:</strong> Utilize os botões de WhatsApp abaixo para os contactar e oferecer ajuda.</div></li>`;
+            } else {
+                list.innerHTML += `<li class="${liClass} border-green-400"><i class="fas fa-check-circle mt-1 text-green-500 mr-3"></i> <div>Todos os colaboradores que iniciaram cursos apresentam progresso ativo.</div></li>`;
+            }
+        }
+
+        function populateTable(alunosData) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            alunosData.forEach(aluno => {
+                const tr = document.createElement('tr');
+                
+                // Definir cor da taxa
+                let taxaColor = 'text-green-600';
+                if (aluno.taxa === 0) taxaColor = 'text-red-600';
+                else if (aluno.taxa < 50) taxaColor = 'text-yellow-600';
+
+                // Mensagem customizada para WhatsApp
+                let msg = aluno.taxa === 0 
+                    ? `Olá ${aluno.nome.split(' ')[0]}, notámos que ainda não concluiu os cursos iniciados na Universidade Sankhya. Precisa de alguma ajuda?`
+                    : `Olá ${aluno.nome.split(' ')[0]}, vimos que a sua taxa de conclusão está em ${aluno.taxa}%. Continue assim!`;
+                
+                let phone = aluno.telefone ? aluno.telefone.toString().replace(/\D/g, '') : '';
+                let linkWA = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${aluno.nome}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${aluno.setor}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold ${taxaColor}">${aluno.taxa}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <a href="${linkWA}" target="_blank" class="whatsapp-btn">
+                            <i class="fab fa-whatsapp text-lg"></i> Enviar Mensagem
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
